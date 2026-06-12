@@ -4,6 +4,6 @@
 	"version": "1.0.0",
 	"minAppVersion": "1.7.2",
 	"description": "Extracts references from academic PDFs into a side panel.",
-	"author": "vlad",
+	"author": "gogu",
 	"isDesktopOnly": true
 }
