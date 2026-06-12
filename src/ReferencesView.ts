@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf } from 'obsidian';
+import { ItemView, Menu, WorkspaceLeaf } from 'obsidian';
 import type { ParsedReference } from './types';
 
 export const VIEW_TYPE_REFERENCES = 'bibliography-references';
@@ -83,6 +83,16 @@ export class ReferencesView extends ItemView {
 			row.addEventListener('click', () => {
 				const query = encodeURIComponent(ref.text);
 				window.open(`https://scholar.google.com/scholar?q=${query}`, '_blank');
+			});
+			row.addEventListener('contextmenu', (evt) => {
+				const menu = new Menu();
+				menu.addItem((item) =>
+					item
+						.setTitle('Copy reference text')
+						.setIcon('copy')
+						.onClick(() => navigator.clipboard.writeText(ref.text)),
+				);
+				menu.showAtMouseEvent(evt);
 			});
 		}
 	}
