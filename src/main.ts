@@ -1,8 +1,10 @@
 import { Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian';
 import { VIEW_TYPE_REFERENCES, ReferencesView } from './ReferencesView';
 import { extractReferences } from './pdfParser';
+import type { ParsedReference } from './types';
 
 export default class BibliographyExtractPlugin extends Plugin {
+	private refCache = new Map<string, ParsedReference[]>();
 	async onload(): Promise<void> {
 		this.registerView(VIEW_TYPE_REFERENCES, (leaf) => new ReferencesView(leaf));
 
@@ -70,10 +72,17 @@ export default class BibliographyExtractPlugin extends Plugin {
 		const view = await this.ensureReferencesView();
 		if (!view) return;
 
+		const cached = this.refCache.get(file.path);
+		if (cached) {
+			view.renderReferences(cached);
+			return;
+		}
+
 		view.renderLoading();
 		try {
 			const buffer = await this.app.vault.readBinary(file);
 			const refs = await extractReferences(buffer);
+			this.refCache.set(file.path, refs);
 			view.renderReferences(refs);
 		} catch (err) {
 			console.error('Bibliography Extract: extraction failed', err);
