@@ -72,14 +72,11 @@ export async function extractReferences(buffer: ArrayBuffer): Promise<ParsedRefe
 		const page = await pdf.getPage(i);
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
 		const content = await page.getTextContent();
-		console.log("aaaa: ", content.items);
 		const pageText = joinTextItems(content.items as PdfTextItem[]);
 		if (i >= numPages - 2) {
 			console.log(`[BibliographyExtract] Page ${i} text (last pages):`, pageText.slice(0, 500));
 		}
-		if (i == 15) {
-			console.log(`[BibliographyExtract] Page ${i} text (sample page):`, pageText);
-		}
+		
 		fullText += pageText + '\n';
 	}
 
@@ -97,11 +94,16 @@ function parseReferencesFromText(text: string): ParsedReference[] {
 	const refsSection = text.slice(sectionStart);
 	console.log('[BibliographyExtract] refs section (first 500 chars):', refsSection.slice(0, 500));
 
+	// Clip at biography/author section so bio text doesn't bleed into the last reference
+	const bioMatch = refsSection.search(/\b(BIOGRAPHY|BIOGRAPHIES|ABOUT THE AUTHORS?)\b/i);
+	const searchArea = bioMatch !== -1 ? refsSection.slice(0, bioMatch) : refsSection;
+	console.log('[BibliographyExtract] Bio section marker found at:', bioMatch);
+
 	const pattern = /\[(\d+)\]/g;
 	const splits: Array<{ num: number; start: number }> = [];
 
 	let match: RegExpExecArray | null;
-	while ((match = pattern.exec(refsSection)) !== null) {
+	while ((match = pattern.exec(searchArea)) !== null) {
 		splits.push({ num: parseInt(match[1]!, 10), start: match.index });
 	}
 	console.log('[BibliographyExtract] [N] split points found:', splits.length, splits.slice(0, 5));
@@ -110,11 +112,26 @@ function parseReferencesFromText(text: string): ParsedReference[] {
 	for (let i = 0; i < splits.length; i++) {
 		const current = splits[i]!;
 		const next = splits[i + 1];
-		const end = next ? next.start : refsSection.length;
-		const rawText = refsSection.slice(current.start, end).trim();
+		const end = next ? next.start : searchArea.length;
+		const rawText = searchArea.slice(current.start, end).trim();
 		const refText = rawText.replace(/^\[\d+\]\s*/, '').trim();
 		if (refText.length > 0) {
 			refs.push({ num: current.num, text: refText });
+		}
+	}
+
+	// Fallback: if the last reference is >3x the median length, trim at the last
+	// sentence boundary within 2x median — catches bio bleed-in without a section header
+	if (refs.length >= 2) {
+		const otherLengths = refs.slice(0, -1).map((r) => r.text.length).sort((a, b) => a - b);
+		const median = otherLengths[Math.floor(otherLengths.length / 2)]!;
+		const last = refs[refs.length - 1]!;
+		if (last.text.length > median * 2) {
+			const cutWindow = last.text.slice(0, median * 2);
+			const lastPeriod = cutWindow.lastIndexOf('.');
+			if (lastPeriod > median * 0.5) {
+				last.text = last.text.slice(0, lastPeriod + 1);
+			}
 		}
 	}
 
