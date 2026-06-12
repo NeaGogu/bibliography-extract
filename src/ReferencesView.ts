@@ -80,6 +80,10 @@ export class ReferencesView extends ItemView {
 			const row = tbody.createEl('tr');
 			row.createEl('td', { cls: 'bibliography-num', text: String(ref.num) });
 			row.createEl('td', { cls: 'bibliography-text', text: ref.text });
+			row.addEventListener('click', () => {
+				const query = encodeURIComponent(ref.text);
+				window.open(`https://scholar.google.com/scholar?q=${query}`, '_blank');
+			});
 		}
 	}
 }

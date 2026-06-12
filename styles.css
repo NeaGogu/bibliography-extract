@@ -35,8 +35,17 @@
 	border-bottom: 1px solid var(--background-modifier-border-hover);
 }
 
+.bibliography-table tbody tr {
+	cursor: pointer;
+}
+
 .bibliography-table tbody tr:hover td {
 	background-color: var(--background-secondary);
+}
+
+.bibliography-table tbody tr:hover .bibliography-text {
+	color: var(--link-color);
+	text-decoration: underline;
 }
 
 .bibliography-num {
