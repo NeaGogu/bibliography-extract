@@ -37,14 +37,12 @@ export default class BibliographyExtractPlugin extends Plugin {
 		);
 	}
 
-	onunload(): void {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_REFERENCES);
-	}
+	onunload(): void {}
 
 	private getActivePdfFile(): TFile | null {
-		const leaf = this.app.workspace.activeLeaf;
-		if (!leaf) return null;
-		return this.getLeafPdfFile(leaf);
+		const file = this.app.workspace.getActiveFile();
+		if (!file || file.extension !== 'pdf') return null;
+		return file;
 	}
 
 	private getLeafPdfFile(leaf: WorkspaceLeaf): TFile | null {
@@ -87,7 +85,7 @@ export default class BibliographyExtractPlugin extends Plugin {
 		} catch (err) {
 			console.error('Bibliography Extract: extraction failed', err);
 			view.renderError('Failed to extract references. See console for details.');
-			new Notice('Bibliography Extract: extraction failed.');
+			new Notice('Bibliography extract: extraction failed.');
 		}
 	}
 }

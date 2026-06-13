@@ -60,11 +60,10 @@ Or in matrix notation:
 export async function extractReferences(buffer: ArrayBuffer): Promise<ParsedReference[]> {
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 	const pdfjs = await loadPdfJs();
-	console.log('[BibliographyExtract] pdfjs loaded:', pdfjs);
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
 	const pdf = await pdfjs.getDocument({ data: buffer }).promise;
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 	const numPages = pdf.numPages as number;
-	console.log('[BibliographyExtract] PDF loaded, pages:', numPages);
 
 	let fullText = '';
 	for (let i = 1; i <= numPages; i++) {
@@ -72,32 +71,23 @@ export async function extractReferences(buffer: ArrayBuffer): Promise<ParsedRefe
 		const page = await pdf.getPage(i);
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
 		const content = await page.getTextContent();
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 		const pageText = joinTextItems(content.items as PdfTextItem[]);
-		if (i >= numPages - 2) {
-			console.log(`[BibliographyExtract] Page ${i} text (last pages):`, pageText.slice(0, 500));
-		}
-		
 		fullText += pageText + '\n';
 	}
-
-	console.log('[BibliographyExtract] Total text length:', fullText.length);
-	console.log('[BibliographyExtract] Last 1000 chars:', fullText.slice(-1000));
 
 	return parseReferencesFromText(fullText);
 }
 
 function parseReferencesFromText(text: string): ParsedReference[] {
 	const sectionStart = text.search(/\breferences\b/i);
-	console.log('[BibliographyExtract] "References" section found at index:', sectionStart);
 	if (sectionStart === -1) return [];
 
 	const refsSection = text.slice(sectionStart);
-	console.log('[BibliographyExtract] refs section (first 500 chars):', refsSection.slice(0, 500));
 
 	// Clip at biography/author section so bio text doesn't bleed into the last reference
 	const bioMatch = refsSection.search(/\b(BIOGRAPHY|BIOGRAPHIES|ABOUT THE AUTHORS?)\b/i);
 	const searchArea = bioMatch !== -1 ? refsSection.slice(0, bioMatch) : refsSection;
-	console.log('[BibliographyExtract] Bio section marker found at:', bioMatch);
 
 	const pattern = /\[(\d+)\]/g;
 	const splits: Array<{ num: number; start: number }> = [];
@@ -106,7 +96,6 @@ function parseReferencesFromText(text: string): ParsedReference[] {
 	while ((match = pattern.exec(searchArea)) !== null) {
 		splits.push({ num: parseInt(match[1]!, 10), start: match.index });
 	}
-	console.log('[BibliographyExtract] [N] split points found:', splits.length, splits.slice(0, 5));
 
 	const refs: ParsedReference[] = [];
 	for (let i = 0; i < splits.length; i++) {
@@ -120,8 +109,7 @@ function parseReferencesFromText(text: string): ParsedReference[] {
 		}
 	}
 
-	// Fallback: if the last reference is >3x the median length, trim at the last
-	// sentence boundary within 2x median — catches bio bleed-in without a section header
+	// Fallback: trim last ref if >2x median length — catches bio bleed without a section header
 	if (refs.length >= 2) {
 		const otherLengths = refs.slice(0, -1).map((r) => r.text.length).sort((a, b) => a - b);
 		const median = otherLengths[Math.floor(otherLengths.length / 2)]!;
@@ -135,6 +123,5 @@ function parseReferencesFromText(text: string): ParsedReference[] {
 		}
 	}
 
-	console.log('[BibliographyExtract] Parsed references count:', refs.length);
 	return refs;
 }
