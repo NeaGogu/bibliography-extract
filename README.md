@@ -15,4 +15,3 @@ Extracted references are cached per file for the session, so switching between o
 ## Requirements
 
 - Obsidian 1.7.2 or later
-- Desktop only
