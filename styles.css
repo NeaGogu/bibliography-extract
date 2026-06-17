@@ -5,6 +5,35 @@
 	overflow: hidden;
 }
 
+.bibliography-search-bar {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+}
+
+.bibliography-search-icon {
+	display: flex;
+	align-items: center;
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.bibliography-search-input {
+	flex: 1;
+	background: transparent;
+	border: none;
+	outline: none;
+	color: var(--text-normal);
+	font-size: 0.85em;
+}
+
+.bibliography-search-input::placeholder {
+	color: var(--text-faint);
+}
+
 .bibliography-table-container {
 	flex: 1;
 	overflow-y: auto;
