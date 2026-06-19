@@ -2,10 +2,16 @@ import { Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian';
 import { VIEW_TYPE_REFERENCES, ReferencesView } from './ReferencesView';
 import { extractReferences } from './pdfParser';
 import type { ParsedReference } from './types';
+import { BibliographySettings, DEFAULT_SETTINGS, BibliographySettingTab } from './settings';
 
 export default class BibliographyExtractPlugin extends Plugin {
 	private refCache = new Map<string, ParsedReference[]>();
+	settings!: BibliographySettings;
+
 	async onload(): Promise<void> {
+		await this.loadSettings();
+		this.addSettingTab(new BibliographySettingTab(this.app, this));
+
 		this.registerView(VIEW_TYPE_REFERENCES, (leaf) => new ReferencesView(leaf));
 
 		this.addCommand({
@@ -32,12 +38,23 @@ export default class BibliographyExtractPlugin extends Plugin {
 			this.app.workspace.on('active-leaf-change', (leaf: WorkspaceLeaf | null) => {
 				if (!leaf) return;
 				const file = this.getLeafPdfFile(leaf);
-				if (file) void this.runExtraction(file);
+				if (!file) return;
+				if (this.settings.autoOpenOnPdfFocus ) {
+					void this.runExtraction(file);
+				}
 			}),
 		);
 	}
 
 	onunload(): void {}
+
+	async loadSettings(): Promise<void> {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()) as BibliographySettings;
+	}
+
+	async saveSettings(): Promise<void> {
+		await this.saveData(this.settings);
+	}
 
 	private getActivePdfFile(): TFile | null {
 		const file = this.app.workspace.getActiveFile();
@@ -49,6 +66,13 @@ export default class BibliographyExtractPlugin extends Plugin {
 		if (leaf.view.getViewType() !== 'pdf') return null;
 		const file = (leaf.view as unknown as { file: TFile | null }).file;
 		return file ?? null;
+	}
+
+	private getExistingView(): ReferencesView | null {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_REFERENCES);
+		if (leaves.length === 0) return null;
+		const leaf = leaves[0]!;
+		return leaf.view instanceof ReferencesView ? leaf.view : null;
 	}
 
 	private async ensureReferencesView(): Promise<ReferencesView | null> {
