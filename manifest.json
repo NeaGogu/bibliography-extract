@@ -1,9 +1,9 @@
 {
 	"id": "bibliography-extract",
 	"name": "Bibliography Extract",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"minAppVersion": "1.7.2",
 	"description": "Extracts references from academic PDFs into a side panel.",
 	"author": "gogu",
-	"isDesktopOnly": false 
+	"isDesktopOnly": false
 }
